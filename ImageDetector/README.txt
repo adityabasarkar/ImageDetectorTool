@@ -59,7 +59,7 @@ Default Training parameters
 Batch Size: 5
 Regression Loss function: SmoothL1Loss (Localization Loss)
 Regression Loss Hyperparameter: 1.9
-Classification Loss function: BCEWithLogitsLoss (Binary Cross Entropy with Logits Loss)
+Classification Loss function: BCELoss (Binary Cross Entropy)
 Classification Loss Hyperparameter: 1.1
 Optimizer: Adam
 Epochs: Decided by user
