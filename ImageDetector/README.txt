@@ -79,3 +79,4 @@ Using the Model
 Once the model has been trained or loaded the program gives an option to open the camera.
 Select the model you want to use and once given the option by the CLI, open the camera. There
 should be a blue bounding box that tracks the object the model was trained to track. 
+
