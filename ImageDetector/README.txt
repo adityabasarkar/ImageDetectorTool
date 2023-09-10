@@ -83,7 +83,7 @@ Once the model has been trained or loaded the program gives an option to open th
 Select the model you want to use and once given the option by the CLI, open the camera. There
 should be a blue bounding box that tracks the object the model was trained to track. 
 
-IPT4
+IDM4
 -------------------------------
 Batch Size: 5
 Regression Loss function: Custom Localization Loss
