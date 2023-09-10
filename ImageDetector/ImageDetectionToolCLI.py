@@ -10,6 +10,7 @@ from torchvision.models.vgg import VGG16_Weights
 from torchsummary import summary
 import torchvision.datasets as datasets
 from torch.utils.data import DataLoader, Dataset
+from torch.optim.lr_scheduler import _LRScheduler
 from PIL import Image
 import VideoCapture as vc
 import albumentations as alb
@@ -63,39 +64,86 @@ class FaceDetector(nn.Module):
     def __init__(self):
         super(FaceDetector, self).__init__()
 
-        self.vgg16 = models.vgg16(weights=VGG16_Weights.DEFAULT)
+        self.vgg16 = models.vgg16(weights=VGG16_Weights.DEFAULT)  # Assuming you meant pretrained weights
         self.vgg16 = nn.Sequential(*list(self.vgg16.children())[:-1])
-        self.relu = nn.ReLU()
+        self.ReLU = nn.ReLU();
         self.global_max_pool = nn.AdaptiveMaxPool2d((2, 2))
 
         self.classification = nn.Sequential(
-            nn.Linear(2048, 100),
+            nn.Linear(2048, 1024),
             nn.ReLU(),
-            nn.Linear(100, 50),
+            nn.Linear(1024, 512),
             nn.ReLU(),
-            nn.Linear(50, 1),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
             nn.Sigmoid())
         
         self.regression = nn.Sequential(
-            nn.Linear(2048, 150),
+            nn.Linear(2048, 1024),
             nn.ReLU(),
-            nn.Linear(150, 100),
+            nn.Linear(1024, 512),
             nn.ReLU(),
-            nn.Linear(100, 50),
+            nn.Linear(512, 256),
             nn.ReLU(),
-            nn.Linear(50, 4))        
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 4))        
 
     def forward(self, x):
         features = self.vgg16(x)
         features = self.global_max_pool(features)
         features = features.view(features.size(0), -1)
-        features = features.relu()
+        features = self.ReLU(features)
         
         class_output = self.classification(features)
-
         reg_output = self.regression(features)
 
         return class_output, reg_output
+##################################
+
+
+
+
+
+# custom LR Decay scheduler
+##################################
+class InverseTimeDecayLR(_LRScheduler):
+    def __init__(self, optimizer, decay_rate, last_epoch=-1):
+        self.decay_rate = decay_rate
+        super(InverseTimeDecayLR, self).__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        return [base_lr / (1.0 + self.decay_rate * self._step_count) for base_lr in self.base_lrs]
+##################################
+
+
+
+
+
+# custom Localization loss
+##################################
+class LocalizationLoss(nn.Module):
+    def __init__(self):
+        super(LocalizationLoss, self).__init__()
+
+    def forward(self, yhat, y_true):
+        delta_coord = torch.sum((y_true[:, :2] - yhat[:, :2])**2)
+        
+        h_true = y_true[:, 3] - y_true[:, 1]
+        w_true = y_true[:, 2] - y_true[:, 0]
+        h_pred = yhat[:, 3] - yhat[:, 1]
+        w_pred = yhat[:, 2] - yhat[:, 0]
+        
+        delta_size = torch.sum((w_true - w_pred)**2 + (h_true - h_pred)**2)
+        
+        return delta_coord + delta_size
 ##################################
 
 
@@ -324,8 +372,13 @@ while True:
             model.train()
 
             criterion_classification = nn.BCELoss()
-            criterion_regression = nn.SmoothL1Loss()
+            criterion_regression = LocalizationLoss()
+
+            learningRate = 1e-4
+            BPE = len(data_loader)
+            decayRate = (1/0.75 - 1)/BPE
             optimizer = optim.Adam(model.parameters(), lr=1e-4)
+            scheduler = InverseTimeDecayLR(optimizer, decay_rate=decayRate)
 
             kn = ""
             num_epochs = ""
@@ -449,6 +502,7 @@ while True:
 
                     # Update the model parameters
                     optimizer.step()
+                    scheduler.step()
                     
                     print(f"Epoch [{epoch+1}/{num_epochs}], Progress: [{i+1}/{len(data_loader)}], Class_Loss: {round(loss_classification.item(), 5)}, Reg_Loss: {round(loss_regression.item(), 5)}, Loss: {round(total_loss.item(), 5)}")
                     
