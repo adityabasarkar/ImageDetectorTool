@@ -57,12 +57,15 @@ PyTorch version installed on your computer are compatible.
 Default Training parameters
 -------------------------------
 Batch Size: 5
-Regression Loss function: SmoothL1Loss (Localization Loss)
+Regression Loss function: Custom Localization Loss
 Regression Loss Hyperparameter: 1.9
 Classification Loss function: BCELoss (Binary Cross Entropy)
 Classification Loss Hyperparameter: 1.1
 Optimizer: Adam
+Scheduler: Inverse Time Decay (Custom)
 Epochs: Decided by user
+Learning Rate: 1e-4
+LR_Decay: (1/0.75 - 1)/(batches per epoch)
 
 Note: the hyperparameters for training can vary based on the complexity of the problem
 as well as other factors. You may need to find ways to optimize hyperparameters. 
@@ -70,9 +73,9 @@ as well as other factors. You may need to find ways to optimize hyperparameters.
 Architecture
 -------------------------------
 
-                                           /----> Classification Model (3 FC Layers) (Outputs 0 or 1)
+                                           /----> Classification Model (6 FC Layers) (Outputs 0 or 1)
 Inputs (640 x 480 RGB image) --> VGG16 -->|
-                                           \----> Regression Model (4 FC Layers) (Outputs x1, y1, x2, y2)
+                                           \----> Regression Model (6 FC Layers) (Outputs x1, y1, x2, y2)
 
 Using the Model
 -------------------------------
@@ -80,3 +83,13 @@ Once the model has been trained or loaded the program gives an option to open th
 Select the model you want to use and once given the option by the CLI, open the camera. There
 should be a blue bounding box that tracks the object the model was trained to track. 
 
+IPT4
+-------------------------------
+Batch Size: 5
+Regression Loss function: Custom Localization Loss
+Classification Loss function: BCELoss (Binary Cross Entropy)
+Optimizer: Adam
+Scheduler: Inverse Time Decay (Custom)
+Epochs: 2
+Learning Rate: 1e-4
+LR_Decay: (1/0.75 - 1)/(batches per epoch)
