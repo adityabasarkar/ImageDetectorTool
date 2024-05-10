@@ -66,7 +66,7 @@ class FaceDetector(nn.Module):
 
         self.vgg16 = models.vgg16(weights=VGG16_Weights.DEFAULT)  # Assuming you meant pretrained weights
         self.vgg16 = nn.Sequential(*list(self.vgg16.children())[:-1])
-        self.ReLU = nn.ReLU();
+        self.ReLU = nn.ReLU()
         self.global_max_pool = nn.AdaptiveMaxPool2d((2, 2))
 
         self.classification = nn.Sequential(
